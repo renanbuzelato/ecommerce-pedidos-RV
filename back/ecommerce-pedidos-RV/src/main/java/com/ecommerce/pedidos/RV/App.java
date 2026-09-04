@@ -1,10 +1,12 @@
 package com.ecommerce.pedidos.RV;
 
-/**
- * Hello world!
- */
+import com.ecommerce.pedidos.RV.modelo.Cliente;
+
 public class App {
     public static void main(String[] args) {
-        System.out.println("Hello World!");
+        Cliente cliente = new Cliente("Maria Silva", "123.456.789-00", "maria@email.com");
+
+        System.out.println(cliente);
+        System.out.println(cliente.getIdentificacao());
     }
 }
