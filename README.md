@@ -1,25 +1,25 @@
-# 🛒 Sistema de Gestão de Pedidos — E-commerce
+# Sistema de Gestão de Pedidos — E-commerce
 
 
-### 👥 Equipe / Squad
+### Equipe
 *   **Renan Buzelato**
 *   **Vitor Dias**
 
 ---
 
-### 📝 Descrição do Desafio
+### Descrição do Desafio
 Construção de um sistema robusto e modular de gestão de pedidos para e-commerce, aplicando integralmente os conceitos de **Programação Orientada a Objetos (POO)** em Java, testes automatizados abrangentes, documentação técnica com Javadoc e UML, estruturação de build automatizado com Maven, e versionamento colaborativo avançado no GitHub.
 
 ---
 
-### 🛠️ Tecnologias Utilizadas
+### Tecnologias Utilizadas
 *   **Java** (Linguagem de Programação)
 *   **Apache Maven 3.9** (Gerenciamento de dependências e automação de builds)
 *   **Git / GitHub** (Controle de versão distribuído)
 
 ---
 
-### 📂 Estrutura de Pastas Padrão Maven
+### Estrutura de Pastas Padrão Maven
 ```text
 ecommerce-pedidos-RV/
 ├── src/
