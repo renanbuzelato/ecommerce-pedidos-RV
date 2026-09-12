@@ -90,3 +90,10 @@ _(Preencher a partir das próximas aulas, conforme o projeto evoluir.)_
 ## Licença
 
 Projeto acadêmico — Faculdade de Tecnologia SENAI "Antonio Adolpho Lobbe".
+
+## Decisões Arquiteturais e de Projeto
+
+### Aula 06 — Registro de Decisão de Herança
+* **Proposta Recusada:** Fazer `CarrinhoDeCompras` estender `ArrayList<ItemPedido>`[cite: 2].
+* **Justificativa:** Violaria o princípio da responsabilidade e a regra "é-um"[cite: 2]. Um carrinho de compras *tem uma* lista de itens, ele *não é* uma lista. Se estendesse `ArrayList`, métodos como `clear()` ou `sort()` ficariam expostos publicamente, permitindo a manipulação indevida do carrinho sem passar por regras de negócio[cite: 2].
+* **Alternativa Adotada:** Aplicação de **Composição**, mantendo uma `List<ItemPedido>` interna com encapsulamento e métodos próprios de manipulação[cite: 1, 2].
