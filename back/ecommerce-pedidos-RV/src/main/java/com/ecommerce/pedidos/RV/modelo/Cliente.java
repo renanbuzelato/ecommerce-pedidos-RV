@@ -1,4 +1,4 @@
-package com.ecommerce.modelo;
+package com.ecommerce.pedidos.RV.modelo;
 
 public class Cliente extends Pessoa {
     private String email;

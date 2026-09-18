@@ -1,4 +1,4 @@
-package com.ecommerce.modelo;
+package com.ecommerce.pedidos.RV.modelo;
 
 public abstract class Pessoa {
     private String nome;
@@ -17,7 +17,7 @@ public abstract class Pessoa {
         if (nome == null || nome.isBlank()) {
             throw new IllegalArgumentException("Nome é obrigatório");
         }
-        this.nome = nome.trim();
+        this.nome = nome;
     }
 
     public String getDocumento() {
@@ -28,12 +28,8 @@ public abstract class Pessoa {
         if (documento == null || documento.isBlank()) {
             throw new IllegalArgumentException("Documento é obrigatório");
         }
-        this.documento = documento.trim();
+        this.documento = documento;
     }
 
     public abstract String getIdentificacao();
-}
-
-    public String getResumo() {
-        return nome + " (" + documento + ")";
 }
