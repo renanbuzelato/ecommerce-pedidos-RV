@@ -1,4 +1,4 @@
-package com.ecommerce.modelo;
+package com.ecommerce.pedidos.RV.modelo;
 
 public abstract class Pessoa {
     private String nome;
