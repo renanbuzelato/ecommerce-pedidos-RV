@@ -1,8 +1,8 @@
-package com.ecommerce;
+package com.ecommerce.pedidos.RV;
 
-import com.ecommerce.modelo.Cliente;
-import com.ecommerce.modelo.Pedido;
-import com.ecommerce.modelo.Produto;
+import com.ecommerce.pedidos.RV.modelo.Cliente;
+import com.ecommerce.pedidos.RV.modelo.Pedido;
+import com.ecommerce.pedidos.RV.modelo.Produto;
 
 import java.math.BigDecimal;
 
@@ -12,7 +12,7 @@ public class App {
 
         // Instâncias base
         Cliente cliente = new Cliente("123", "João Silva", "joao@email.com");
-        Produto produto = new Produto("1", "Notebook", new BigDecimal("3500.00"));
+        Produto produto = new Produto("1", "Notebook", new BigDecimal("3500.00"), 10);
 
         // 1. Pedido sem cliente deve falhar
         try {
