@@ -1,36 +1,50 @@
-package com.ecommerce.pedidos.RV;
+package com.ecommerce;
+
+import com.ecommerce.modelo.Cliente;
+import com.ecommerce.modelo.Pedido;
+import com.ecommerce.modelo.Produto;
 
 import java.math.BigDecimal;
-import com.ecommerce.pedidos.RV.modelo.Cliente;
-import com.ecommerce.pedidos.RV.modelo.Produto;
 
 public class App {
     public static void main(String[] args) {
-        // 1. Teste da classe Cliente e herança de Pessoa
-        Cliente cliente = new Cliente("Maria Silva", "123.456.789-00", "maria@email.com");
-        System.out.println("--- Teste Cliente ---");
-        System.out.println(cliente.getIdentificacao());
+        System.out.println("=== TESTES DE INTEGRIDADE DO DOMÍNIO ===");
 
-        System.out.println("\n--- Teste Produto & Encapsulamento ---");
-        
-        // 2. Teste de produto válido
-        Produto teclado = new Produto("TEC-001", "Teclado", new BigDecimal("150.00"), 8);
-        System.out.println("Produto criado: " + teclado.getNome() + " - R$ " + teclado.getPreco());
+        // Instâncias base
+        Cliente cliente = new Cliente("123", "João Silva", "joao@email.com");
+        Produto produto = new Produto("1", "Notebook", new BigDecimal("3500.00"));
 
-        // 3. Teste do Passo 2 e 5 do Roteiro: Tentar colocar preço negativo (Deve FALHAR e entrar no catch)
+        // 1. Pedido sem cliente deve falhar
         try {
-            teclado.setPreco(new BigDecimal("-10.00"));
-            System.out.println("FALHOU: aceitou preço negativo");
+            new Pedido("PED-001", null);
         } catch (IllegalArgumentException e) {
-            System.out.println("OK: recusou preço negativo -> " + e.getMessage());
+            System.out.println(" Sucesso: " + e.getMessage());
         }
 
-        // 4. Teste de estoque negativo
+        // 2. Tentar pagar pedido sem itens
+        Pedido pedido = new Pedido("PED-001", cliente);
         try {
-            teclado.baixarEstoque(500);
-            System.out.println("FALHOU: baixou estoque além do disponível");
-        } catch (IllegalArgumentException e) {
-            System.out.println("OK: recusou estoque insuficiente -> " + e.getMessage());
+            pedido.pagarCom("PIX");
+        } catch (IllegalStateException e) {
+            System.out.println(" Sucesso: " + e.getMessage());
         }
+
+        // 3. Adicionar item com quantidade negativa
+        try {
+            pedido.adicionarItem(produto, -1);
+        } catch (IllegalArgumentException e) {
+            System.out.println(" Sucesso: " + e.getMessage());
+        }
+
+        // 4. Adicionar item válido e tentar modificar lista imutável externa
+        pedido.adicionarItem(produto, 2);
+        try {
+            pedido.getItens().clear();
+        } catch (UnsupportedOperationException e) {
+            System.out.println(" Sucesso: Proteção da lista de itens funcionando!");
+        }
+
+        // 5. Cálculo do Total
+        System.out.println("Total do pedido: R$ " + pedido.calcularValorTotal());
     }
 }
