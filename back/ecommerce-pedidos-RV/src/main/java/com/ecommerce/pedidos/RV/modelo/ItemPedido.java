@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 public class ItemPedido {
     private final Produto produto;
     private final int quantidade;
-    private final BigDecimal precoPraticado; // Preço congelado no momento do pedido
+    private final BigDecimal precoPraticado;
 
     public ItemPedido(Produto produto, int quantidade, BigDecimal precoPraticado) {
         if (produto == null) {

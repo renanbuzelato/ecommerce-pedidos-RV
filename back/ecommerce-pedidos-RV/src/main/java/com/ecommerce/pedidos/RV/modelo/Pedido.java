@@ -7,9 +7,9 @@ import java.util.List;
 
 public class Pedido {
     private final String numero;
-    private final Cliente cliente; // Associação 1 para 1 (Obrigatória)
-    private final List<ItemPedido> itens = new ArrayList<>(); // Composição
-    private String formaPagamento; // Associação 0..1 (Opcional - evoluirá na Aula 08)
+    private final Cliente cliente;
+    private final List<ItemPedido> itens = new ArrayList<>();
+    private String formaPagamento;
 
     public Pedido(String numero, Cliente cliente) {
         if (cliente == null) {
@@ -22,7 +22,6 @@ public class Pedido {
         this.cliente = cliente;
     }
 
-    // O próprio pedido cria e gerencia o ItemPedido (Composição)
     public void adicionarItem(Produto produto, int quantidade) {
         if (produto == null) {
             throw new IllegalArgumentException("Produto é obrigatório");
@@ -30,10 +29,7 @@ public class Pedido {
         if (quantidade <= 0) {
             throw new IllegalArgumentException("Quantidade deve ser maior que zero");
         }
-        // Exemplo de regra de negócio para checar estoque (se houver o método na classe Produto)
-        // if (!produto.temEstoqueDisponivel(quantidade)) { ... }
-
-        itens.add(new ItemPedido(produto, quantidade, produto.getPreco()));
+        this.itens.add(new ItemPedido(produto, quantidade, produto.getPreco()));
     }
 
     public void pagarCom(String formaPagamento) {
@@ -46,16 +42,24 @@ public class Pedido {
     public BigDecimal calcularValorTotal() {
         BigDecimal total = BigDecimal.ZERO;
         for (ItemPedido item : itens) {
-            total = total.add(item.calcularSubtotal()); // Importante: reatribuir 'total' em BigDecimal
+            total = total.add(item.calcularSubtotal());
         }
         return total;
     }
 
     public List<ItemPedido> getItens() {
-        return Collections.unmodifiableList(itens); // Retorna lista imutável
+        return Collections.unmodifiableList(itens);
     }
 
-    public String getNumero() { return numero; }
-    public Cliente getCliente() { return cliente; }
-    public String getFormaPagamento() { return formaPagamento; }
+    public String getNumero() {
+        return numero;
+    }
+
+    public Cliente getCliente() {
+        return cliente;
+    }
+
+    public String getFormaPagamento() {
+        return formaPagamento;
+    }
 }
