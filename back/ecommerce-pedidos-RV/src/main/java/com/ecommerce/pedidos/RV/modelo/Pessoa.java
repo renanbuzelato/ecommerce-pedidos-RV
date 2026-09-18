@@ -33,3 +33,7 @@ public abstract class Pessoa {
 
     public abstract String getIdentificacao();
 }
+
+    public String getResumo() {
+        return nome + " (" + documento + ")";
+}
