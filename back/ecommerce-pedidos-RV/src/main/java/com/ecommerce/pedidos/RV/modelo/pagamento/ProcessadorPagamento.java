@@ -1,0 +1,9 @@
+package com.ecommerce.pedidos.RV.modelo.pagamento;
+
+import java.math.BigDecimal;
+
+public interface ProcessadorPagamento {
+    boolean processar(BigDecimal valor);
+    String getComprovante();
+    String getDescricao();
+}

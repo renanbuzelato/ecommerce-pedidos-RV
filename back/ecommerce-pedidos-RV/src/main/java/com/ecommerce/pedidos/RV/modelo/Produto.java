@@ -8,11 +8,22 @@ public class Produto {
     private BigDecimal preco;
     private int quantidadeEmEstoque;
 
+    // Construtor principal completo (já existente)
     public Produto(String codigo, String nome, BigDecimal preco, int estoque) {
         setCodigoPrivate(codigo);
         setNome(nome);
         setPreco(preco);
         setQuantidadeEmEstoque(estoque);
+    }
+
+    // Sobrecarga 1: Permite instanciar apenas com (nome, preco)
+    public Produto(String nome, BigDecimal preco) {
+        this("PROD-" + System.currentTimeMillis(), nome, preco, 100);
+    }
+
+    // Sobrecarga 2: Permite instanciar com (codigo, nome, preco)
+    public Produto(String codigo, String nome, BigDecimal preco) {
+        this(codigo, nome, preco, 100);
     }
 
     private void setCodigoPrivate(String codigo) {
