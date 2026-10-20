@@ -1,68 +1,63 @@
 package com.ecommerce.pedidos.RV.modelo;
 
+import com.ecommerce.pedidos.RV.excecao.EstoqueInsuficienteException;
+import com.ecommerce.pedidos.RV.excecao.PagamentoRecusadoException;
+import com.ecommerce.pedidos.RV.excecao.PedidoInvalidoException;
+import com.ecommerce.pedidos.RV.modelo.pagamento.ProcessadorPagamento;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import com.ecommerce.pedidos.RV.modelo.pagamento.ProcessadorPagamento;
 
 public class Pedido {
-    private Cliente cliente;
     private List<ItemPedido> itens = new ArrayList<>();
-    private String situacao = "ABERTO";
-    private String comprovante;
+    private boolean pago = false;
 
-    public Pedido(Cliente cliente) {
-        if (cliente == null) {
-            throw new IllegalArgumentException("Cliente é obrigatório");
+    public void adicionarItem(Produto produto, int quantidade) throws EstoqueInsuficienteException {
+        if (produto == null) {
+            throw new IllegalArgumentException("Produto não pode ser nulo.");
         }
-        this.cliente = cliente;
-    }
-
-    public void adicionarItem(Produto produto, int quantidade) {
-        if (produto == null || quantidade <= 0) {
-            throw new IllegalArgumentException("Produto e quantidade válida são obrigatórios");
+        if (quantidade <= 0) {
+            throw new IllegalArgumentException("Quantidade deve ser positiva.");
         }
-        // Passa Produto, quantidade e o preço unitário extraído do produto
-        BigDecimal preco = (produto.getPreco() != null) ? produto.getPreco() : BigDecimal.ZERO;
-        itens.add(new ItemPedido(produto, quantidade, preco));
+        if (pago) {
+            throw new IllegalStateException("Não é possível alterar um pedido já pago.");
+        }
+
+        // Tenta baixar do estoque
+        produto.baixarEstoque(quantidade);
+        itens.add(new ItemPedido(produto, quantidade));
     }
 
-    public void adicionarItem(Produto produto) {
-        adicionarItem(produto, 1);
-    }
-
-    public BigDecimal calcularValorTotal() {
-        BigDecimal total = BigDecimal.ZERO;
+    public double getValorTotal() {
+        double total = 0.0;
         for (ItemPedido item : itens) {
-            BigDecimal preco = (item.getProduto() != null && item.getProduto().getPreco() != null) 
-                    ? item.getProduto().getPreco() 
-                    : BigDecimal.ZERO;
-            total = total.add(preco.multiply(new BigDecimal(item.getQuantidade())));
+            total += item.getPrecoTotal();
         }
         return total;
     }
 
-    public boolean pagar(ProcessadorPagamento processador) {
+    public void pagar(ProcessadorPagamento processador) throws PedidoInvalidoException, PagamentoRecusadoException {
         if (processador == null) {
-            throw new IllegalArgumentException("Forma de pagamento é obrigatória");
+            throw new IllegalArgumentException("Processador de pagamento não pode ser nulo.");
+        }
+        if (pago) {
+            throw new PedidoInvalidoException("Este pedido já foi pago anteriormente.");
         }
         if (itens.isEmpty()) {
-            throw new IllegalStateException("Pedido sem itens não pode ser pago");
+            throw new PedidoInvalidoException("Não é possível pagar um pedido sem itens.");
         }
 
-        boolean aprovado = processador.processar(calcularValorTotal());
-        if (aprovado) {
-            this.situacao = "PAGO";
-            this.comprovante = processador.getComprovante();
+        // Converte o valor total para BigDecimal para ser aceito pela interface ProcessadorPagamento
+        boolean aprovado = processador.processar(BigDecimal.valueOf(getValorTotal()));
+        if (!aprovado) {
+            throw new PagamentoRecusadoException(processador.getClass().getSimpleName(), "Saldo/Transação recusada pela operadora.");
         }
-        return aprovado;
+
+        this.pago = true;
     }
 
-    public String getSituacao() {
-        return situacao;
-    }
-
-    public String getComprovante() {
-        return comprovante;
+    public boolean isPago() {
+        return pago;
     }
 }
