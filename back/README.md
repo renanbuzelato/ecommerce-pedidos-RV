@@ -58,7 +58,28 @@ ecommerce-pedidos-NOMEDASQUAD/
 
 ## Como rodar o projeto
 
-_(Preencher a partir das próximas aulas, conforme o projeto evoluir.)_
+Pré-requisitos: Java 17+, Maven e MySQL 8 rodando em `localhost:3306`.
+
+```bash
+cd back/ecommerce-pedidos-RV
+
+# 1. Criar o banco e as tabelas (uma vez só)
+mysql -u root -p < src/main/resources/db/schema.sql
+
+# 2. Informar a senha do banco por variável de ambiente
+export DB_PASSWORD=suasenha          # Linux/macOS
+# $env:DB_PASSWORD="suasenha"        # Windows PowerShell
+# set DB_PASSWORD=suasenha           # Windows CMD
+# (opcional) export DB_USER=outro_usuario   -> padrão: root
+
+# 3. Testes (não precisam de MySQL: usam H2 em memória)
+mvn test
+
+# 4. Subir a aplicação
+mvn spring-boot:run
+```
+
+Registro da migração para Spring Boot (Aula 14): [`docs/REGISTRO_MIGRACAO.md`](ecommerce-pedidos-RV/docs/REGISTRO_MIGRACAO.md).
 
 ## Roadmap do projeto (por aula)
 
