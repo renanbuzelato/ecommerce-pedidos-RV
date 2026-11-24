@@ -47,6 +47,6 @@ public class PedidoUtils {
     }
 
     public static String formatarLinhaDoRecibo(String nome, double preco, int quantidade) {
-        return String.format("%-20s R$ %8.2f x%3d", nome, preco, quantidade);
+        return String.format("%-20s R$ %8.2f x%3d%n", nome, preco, quantidade);
     }
 }
