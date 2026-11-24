@@ -148,7 +148,7 @@ O build usa `VITE_BASE=/<repositorio>/` e o React Router lê o mesmo prefixo
 
 - [Manual do usuário](docs/MANUAL_USUARIO.md)
 - [Contrato da API e implementação no back-end](docs/CONTRATO_API.md)
-- Relatório técnico e relatório de acessibilidade: `docs/*.docx`
+- Relatório técnico e relatório de acessibilidade (ABNT, PDF e DOCX): `docs/Relatorio_*_ABNT.*`
 
 ## Equipe
 
