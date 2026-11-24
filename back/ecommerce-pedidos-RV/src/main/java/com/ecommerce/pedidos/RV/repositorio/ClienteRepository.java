@@ -12,4 +12,8 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long> {
     List<Cliente> findByNomeContainingIgnoreCase(String trecho);
     boolean existsByEmail(String email);          // SELECT COUNT(*) ... WHERE email = ?
     boolean existsByDocumento(String cpf);        // o atributo Java é "documento" (coluna cpf)
+
+    // Na edição, o próprio cliente não conta como duplicado
+    boolean existsByEmailAndIdNot(String email, Long id);
+    boolean existsByDocumentoAndIdNot(String cpf, Long id);
 }

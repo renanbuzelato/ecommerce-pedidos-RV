@@ -1,0 +1,83 @@
+# Pipeline de integração contínua do FRONT-END.
+# Este arquivo vai na RAIZ do repositório: .github/workflows/front-ci.yml
+name: Front-end CI
+
+on:
+  push:
+    branches: [main]
+    paths: ['front/**', '.github/workflows/front-ci.yml']
+  pull_request:
+    paths: ['front/**', '.github/workflows/front-ci.yml']
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: front
+
+jobs:
+  qualidade:
+    name: Lint + testes de componentes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: front/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+      - run: npm run build
+
+  e2e:
+    name: Testes ponta a ponta + acessibilidade (Playwright/axe)
+    needs: qualidade
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: front/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: relatorio-playwright
+          path: front/playwright-report
+          retention-days: 14
+
+  deploy:
+    name: Publicar no GitHub Pages
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: e2e
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.publicar.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: front/package-lock.json
+      - run: npm ci
+      # A API real ainda não está publicada: o site usa a API simulada
+      - run: npm run build
+        env:
+          VITE_BASE: /${{ github.event.repository.name }}/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: front/dist
+      - id: publicar
+        uses: actions/deploy-pages@v4

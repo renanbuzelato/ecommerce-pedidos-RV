@@ -22,8 +22,10 @@ public class CartaoCredito extends FormaPagamento implements ProcessadorPagament
 
     @Override
     public boolean processar(BigDecimal valor) {
-        System.out.println("Autorizando cartão " + numeroCartao + " em " + parcelas + "x");
-        return true;
+        System.out.println("Autorizando cartão final " + getFinal() + " em " + parcelas + "x");
+        // Simulação da operadora (Aula 15): cartões terminados em 0000 são recusados,
+        // para a interface conseguir demonstrar o fluxo de pagamento recusado.
+        return numeroCartao == null || !numeroCartao.endsWith("0000");
     }
 
     @Override
@@ -33,6 +35,12 @@ public class CartaoCredito extends FormaPagamento implements ProcessadorPagament
 
     @Override
     public String getDescricao() {
-        return "Cartão de Crédito " + numeroCartao + " (" + parcelas + "x)";
+        // Nunca expõe o número completo: só os 4 últimos dígitos
+        return "Cartão final " + getFinal() + " (" + parcelas + "x)";
+    }
+
+    private String getFinal() {
+        return numeroCartao == null || numeroCartao.length() < 4
+                ? "????" : numeroCartao.substring(numeroCartao.length() - 4);
     }
 }

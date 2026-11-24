@@ -5,7 +5,10 @@ import com.ecommerce.pedidos.RV.excecao.PagamentoRecusadoException;
 import com.ecommerce.pedidos.RV.excecao.PedidoInvalidoException;
 import com.ecommerce.pedidos.RV.modelo.pagamento.ProcessadorPagamento;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -16,6 +19,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -57,6 +61,21 @@ public class Pedido {
     @Column(name = "data_criacao", nullable = false)
     private LocalDateTime dataCriacao;
 
+    // ---- Aula 15: dados que a interface exibe ----
+
+    @Embedded
+    private EnderecoEntrega enderecoEntrega;
+
+    @Embedded
+    private RegistroPagamento pagamento;
+
+    // Linha do tempo do pedido. EAGER porque o detalhe do pedido sempre mostra o histórico;
+    // carregado num SELECT separado (não entra no JOIN FETCH dos itens, evitando MultipleBagFetchException).
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "pedido_historico", joinColumns = @JoinColumn(name = "pedido_id"))
+    @OrderBy("data ASC")
+    private List<RegistroSituacao> historico = new ArrayList<>();
+
     protected Pedido() { }                   // exigido pelo JPA
 
     public Pedido(Cliente cliente) {
@@ -64,8 +83,14 @@ public class Pedido {
             throw new IllegalArgumentException("Pedido precisa de um cliente.");
         }
         this.cliente = cliente;
-        this.situacao = SituacaoPedido.ABERTO;
         this.dataCriacao = LocalDateTime.now();
+        mudarSituacao(SituacaoPedido.ABERTO);
+    }
+
+    /** Toda mudança de situação passa por aqui: assim o histórico nunca fica para trás. */
+    private void mudarSituacao(SituacaoPedido nova) {
+        this.situacao = nova;
+        this.historico.add(new RegistroSituacao(nova, LocalDateTime.now()));
     }
 
     public void adicionarItem(Produto produto, int quantidade) throws EstoqueInsuficienteException {
@@ -97,7 +122,8 @@ public class Pedido {
         if (processador == null) {
             throw new IllegalArgumentException("Processador de pagamento não pode ser nulo.");
         }
-        if (situacao == SituacaoPedido.PAGO) {
+        if (situacao == SituacaoPedido.PAGO || situacao == SituacaoPedido.ENVIADO
+                || situacao == SituacaoPedido.ENTREGUE) {
             throw new PedidoInvalidoException("Este pedido já foi pago anteriormente.");
         }
         if (situacao == SituacaoPedido.CANCELADO) {
@@ -113,7 +139,7 @@ public class Pedido {
                     "Saldo/Transação recusada pela operadora.");
         }
 
-        this.situacao = SituacaoPedido.PAGO;
+        mudarSituacao(SituacaoPedido.PAGO);
     }
 
     /** Cancela o pedido e devolve os itens ao estoque. */
@@ -121,13 +147,53 @@ public class Pedido {
         if (situacao == SituacaoPedido.CANCELADO) {
             throw new PedidoInvalidoException("Pedido já está cancelado.");
         }
-        if (situacao == SituacaoPedido.PAGO) {
+        if (situacao != SituacaoPedido.ABERTO) {
             throw new PedidoInvalidoException("Pedido pago não pode ser cancelado.");
         }
         for (ItemPedido item : itens) {
             item.getProduto().reporEstoque(item.getQuantidade());
         }
-        this.situacao = SituacaoPedido.CANCELADO;
+        mudarSituacao(SituacaoPedido.CANCELADO);
+    }
+
+    /** PAGO -> ENVIADO */
+    public void enviar() throws PedidoInvalidoException {
+        if (situacao != SituacaoPedido.PAGO) {
+            throw new PedidoInvalidoException("Só é possível enviar um pedido pago.");
+        }
+        mudarSituacao(SituacaoPedido.ENVIADO);
+    }
+
+    /** ENVIADO -> ENTREGUE */
+    public void entregar() throws PedidoInvalidoException {
+        if (situacao != SituacaoPedido.ENVIADO) {
+            throw new PedidoInvalidoException("Só é possível entregar um pedido enviado.");
+        }
+        mudarSituacao(SituacaoPedido.ENTREGUE);
+    }
+
+    /** Guarda o resultado da última tentativa de pagamento (aprovada, recusada ou pendente). */
+    public void registrarPagamento(RegistroPagamento registro) {
+        this.pagamento = registro;
+    }
+
+    /** Boleto pendente compensado: único caminho de ABERTO -> PAGO sem novo processamento. */
+    public void confirmarCompensacaoBoleto() throws PedidoInvalidoException {
+        boolean boletoPendente = pagamento != null
+                && pagamento.getForma() == TipoPagamento.BOLETO
+                && pagamento.getResultado() == ResultadoPagamento.PENDENTE;
+        if (situacao != SituacaoPedido.ABERTO || !boletoPendente) {
+            throw new PedidoInvalidoException("Pedido só fica pago após um pagamento aprovado.");
+        }
+        this.pagamento = pagamento.comResultado(ResultadoPagamento.APROVADO);
+        mudarSituacao(SituacaoPedido.PAGO);
+    }
+
+    public void definirEnderecoEntrega(EnderecoEntrega endereco) {
+        if (situacao != SituacaoPedido.ABERTO) {
+            throw new IllegalStateException("Só é possível alterar um pedido em aberto.");
+        }
+        this.enderecoEntrega = endereco;
     }
 
     public boolean isPago() {
@@ -139,4 +205,7 @@ public class Pedido {
     public List<ItemPedido> getItens() { return Collections.unmodifiableList(itens); }
     public SituacaoPedido getSituacao() { return situacao; }
     public LocalDateTime getDataCriacao() { return dataCriacao; }
+    public EnderecoEntrega getEnderecoEntrega() { return enderecoEntrega; }
+    public RegistroPagamento getPagamento() { return pagamento; }
+    public List<RegistroSituacao> getHistorico() { return Collections.unmodifiableList(historico); }
 }

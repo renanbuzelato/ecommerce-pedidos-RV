@@ -3,6 +3,7 @@ package com.ecommerce.pedidos.RV.servico;
 import com.ecommerce.pedidos.RV.excecao.ProdutoDuplicadoException;
 import com.ecommerce.pedidos.RV.excecao.ProdutoNaoEncontradoException;
 import com.ecommerce.pedidos.RV.modelo.Produto;
+import com.ecommerce.pedidos.RV.repositorio.PedidoRepository;
 import com.ecommerce.pedidos.RV.repositorio.ProdutoRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,10 +19,12 @@ import java.util.List;
 public class ServicoProduto {
 
     private final ProdutoRepository repositorio;
+    private final PedidoRepository pedidos;
 
     // Construtor único: o Spring injeta sozinho, sem @Autowired e sem "new"
-    public ServicoProduto(ProdutoRepository repositorio) {
+    public ServicoProduto(ProdutoRepository repositorio, PedidoRepository pedidos) {
         this.repositorio = repositorio;
+        this.pedidos = pedidos;
     }
 
     @Transactional
@@ -64,6 +67,23 @@ public class ServicoProduto {
         return produto;
     }
 
+    /** Edição completa feita pela área administrativa (PUT /api/produtos/{id}). */
+    @Transactional
+    public Produto atualizar(Long id, String nome, String descricao, String categoria,
+                             BigDecimal preco, int estoque, boolean ativo) {
+        Produto produto = buscar(id);
+        if (repositorio.existsByNomeAndIdNot(nome.trim(), id)) {
+            throw new ProdutoDuplicadoException(nome);
+        }
+        produto.setNome(nome);
+        produto.setDescricao(descricao);
+        produto.setCategoria(categoria);
+        produto.alterarPreco(preco);
+        produto.definirEstoque(estoque);
+        if (ativo) produto.ativar(); else produto.desativar();
+        return produto;                       // dirty checking grava o UPDATE no commit
+    }
+
     @Transactional
     public Produto reporEstoque(Long id, int quantidade) {
         Produto produto = buscar(id);
@@ -79,9 +99,12 @@ public class ServicoProduto {
 
     @Transactional
     public void excluir(Long id) {
-        if (!repositorio.existsById(id)) {
-            throw new ProdutoNaoEncontradoException(id);
+        Produto produto = buscar(id);
+        // Política RESTRICT (Aula 13) checada na regra, com mensagem clara em vez de erro de FK
+        if (pedidos.existsByItens_Produto_Id(id)) {
+            throw new IllegalStateException("\"" + produto.getNome()
+                    + "\" já aparece em pedidos e não pode ser excluído. Desative-o na edição.");
         }
-        repositorio.deleteById(id);
+        repositorio.delete(produto);
     }
 }
