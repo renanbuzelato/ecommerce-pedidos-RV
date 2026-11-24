@@ -27,4 +27,17 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
            WHERE p.id = :id
            """)
     Optional<Pedido> buscarComItens(@Param("id") Long id);
+
+    /** Lista para a API: mesmo JOIN FETCH, todos os pedidos, mais novos primeiro. */
+    @Query("""
+           SELECT DISTINCT p FROM Pedido p
+           JOIN FETCH p.cliente
+           LEFT JOIN FETCH p.itens i
+           LEFT JOIN FETCH i.produto
+           ORDER BY p.dataCriacao DESC
+           """)
+    List<Pedido> listarCompletos();
+
+    /** RESTRICT item -> produto: produto que já foi vendido não pode ser apagado. */
+    boolean existsByItens_Produto_Id(Long produtoId);
 }

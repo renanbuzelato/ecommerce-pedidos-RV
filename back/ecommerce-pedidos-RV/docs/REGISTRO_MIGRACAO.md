@@ -102,7 +102,7 @@ Quando o pedido precisa vir completo, `PedidoRepository.buscarComItens` usa `@Qu
 dependia de um MySQL com o produto de id 1 cadastrado. Os testes foram movidos para o lugar certo e
 ajustados para o domínio atual; o do DAO saiu junto com o DAO.
 
-## 9. Pendente (Aula 15)
+## 9. Pendente (Aula 15) — concluído, ver [REGISTRO_API_REST.md](REGISTRO_API_REST.md)
 
 - Controladores REST (`@RestController`) e mapeamento das exceções para códigos HTTP (`@RestControllerAdvice`).
 - Pipeline de CI/CD (GitHub Actions) rodando `mvn test` a cada push — os testes já rodam sem MySQL.

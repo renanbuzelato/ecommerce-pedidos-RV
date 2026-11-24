@@ -3,6 +3,7 @@ package com.ecommerce.pedidos.RV.servico;
 import com.ecommerce.pedidos.RV.excecao.ProdutoDuplicadoException;
 import com.ecommerce.pedidos.RV.excecao.ProdutoNaoEncontradoException;
 import com.ecommerce.pedidos.RV.modelo.Produto;
+import com.ecommerce.pedidos.RV.repositorio.PedidoRepository;
 import com.ecommerce.pedidos.RV.repositorio.ProdutoRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,9 @@ class ServicoProdutoTest {
 
     @Mock
     private ProdutoRepository repositorio;
+
+    @Mock
+    private PedidoRepository pedidos;
 
     @InjectMocks
     private ServicoProduto servico;

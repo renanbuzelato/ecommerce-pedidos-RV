@@ -3,6 +3,7 @@ package com.ecommerce.pedidos.RV.servico;
 import com.ecommerce.pedidos.RV.excecao.ClienteDuplicadoException;
 import com.ecommerce.pedidos.RV.excecao.ClienteNaoEncontradoException;
 import com.ecommerce.pedidos.RV.modelo.Cliente;
+import com.ecommerce.pedidos.RV.modelo.Endereco;
 import com.ecommerce.pedidos.RV.repositorio.ClienteRepository;
 import com.ecommerce.pedidos.RV.repositorio.PedidoRepository;
 import org.springframework.stereotype.Service;
@@ -55,6 +56,26 @@ public class ServicoCliente {
             throw new ClienteDuplicadoException("e-mail", novoEmail);
         }
         cliente.setEmail(novoEmail);
+        return cliente;
+    }
+
+    /** Edição completa (PUT /api/clientes/{id}): dados pessoais e lista de endereços. */
+    @Transactional
+    public Cliente atualizar(Long id, String nome, String cpf, String email, String telefone,
+                             List<Endereco> enderecos) {
+        Cliente cliente = buscar(id);
+        String emailNormalizado = email.trim().toLowerCase();
+        if (repositorio.existsByEmailAndIdNot(emailNormalizado, id)) {
+            throw new ClienteDuplicadoException("e-mail", email);
+        }
+        if (repositorio.existsByDocumentoAndIdNot(cpf, id)) {
+            throw new ClienteDuplicadoException("CPF", cpf);
+        }
+        cliente.setNome(nome);
+        cliente.setDocumento(cpf);
+        cliente.setEmail(emailNormalizado);
+        cliente.setTelefone(telefone);
+        cliente.substituirEnderecos(enderecos);
         return cliente;
     }
 

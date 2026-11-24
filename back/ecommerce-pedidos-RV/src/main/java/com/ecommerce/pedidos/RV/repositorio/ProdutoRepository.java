@@ -16,4 +16,5 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
     List<Produto> findByAtivoTrue();                               // WHERE ativo = TRUE
     Optional<Produto> findByNome(String nome);
     boolean existsByNome(String nome);
+    boolean existsByNomeAndIdNot(String nome, Long id);   // edição: ignora o próprio produto
 }
