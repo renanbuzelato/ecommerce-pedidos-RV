@@ -2,9 +2,6 @@ package com.ecommerce.pedidos.RV;
 
 import com.ecommerce.pedidos.RV.util.PedidoUtils;
 
-/**
- * Classe de teste manual dos métodos de PedidoUtils.
- */
 public class App {
     public static void main(String[] args) {
         String[] produtos = {"Teclado", "Monitor", "Mouse"};
