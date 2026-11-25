@@ -4,8 +4,8 @@ Interface web em **React** do Sistema de Gestão de Pedidos (squad RV), constru�
 Situação de Aprendizagem Desafiadora integrada entre as UCs **Framework Desenvolvimento
 Front-End** e **Desenvolvimento Back-end** — ADS, Faculdade SENAI "Antonio Adolpho Lobbe".
 
-**Aplicação publicada:** _(cole aqui o link do GitHub Pages depois do primeiro deploy —
-ex.: https://renanbuzelato.github.io/ecommerce-pedidos-RV/)_
+**Aplicação publicada:** [https://renanbuzelato.github.io/ecommerce-pedidos-RV/](https://renanbuzelato.github.io/ecommerce-pedidos-RV/)
+(usa a API simulada, porque o back-end não está hospedado)
 
 |               |                                                                                                       |
 | ------------- | ----------------------------------------------------------------------------------------------------- |
@@ -139,7 +139,7 @@ As regras espelham o domínio Java (`Pix`, `Boleto`, `CartaoCredito`, `Pedido.pa
 
 1. No GitHub: **Settings → Pages → Source: GitHub Actions**.
 2. Faça merge na `main`; o job `deploy` publica `front/dist` em `https://<usuario>.github.io/<repositorio>/`.
-3. Copie o link para o topo deste README.
+3. O site fica em https://renanbuzelato.github.io/ecommerce-pedidos-RV/.
 
 O build usa `VITE_BASE=/<repositorio>/` e o React Router lê o mesmo prefixo
 (`import.meta.env.BASE_URL`), por isso as rotas funcionam também ao abrir um link direto.
