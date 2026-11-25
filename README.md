@@ -3,7 +3,7 @@
 > Projeto integrador das Unidades Curriculares **Desenvolvimento Back-end** e **Framework Desenvolvimento Front-End**
 > Curso Superior de Tecnologia em Análise e Desenvolvimento de Sistemas — Turma CSTADS601
 
-**Aplicação publicada:** _(cole aqui o link do GitHub Pages)_ · **Relatórios:** [`front/docs`](front/docs)
+**Aplicação publicada:** [https://renanbuzelato.github.io/ecommerce-pedidos-RV/](https://renanbuzelato.github.io/ecommerce-pedidos-RV/) · **Relatórios:** [`front/docs`](front/docs)
 
 ## Equipe / Squad
 
@@ -114,6 +114,6 @@ Projeto acadêmico — Faculdade de Tecnologia SENAI "Antonio Adolpho Lobbe".
 ## Decisões Arquiteturais e de Projeto
 
 ### Aula 06 — Registro de Decisão de Herança
-* **Proposta Recusada:** Fazer `CarrinhoDeCompras` estender `ArrayList<ItemPedido>`[cite: 2].
-* **Justificativa:** Violaria o princípio da responsabilidade e a regra "é-um"[cite: 2]. Um carrinho de compras *tem uma* lista de itens, ele *não é* uma lista. Se estendesse `ArrayList`, métodos como `clear()` ou `sort()` ficariam expostos publicamente, permitindo a manipulação indevida do carrinho sem passar por regras de negócio[cite: 2].
-* **Alternativa Adotada:** Aplicação de **Composição**, mantendo uma `List<ItemPedido>` interna com encapsulamento e métodos próprios de manipulação[cite: 1, 2].
+* **Proposta Recusada:** Fazer `CarrinhoDeCompras` estender `ArrayList<ItemPedido>`.
+* **Justificativa:** Violaria o princípio da responsabilidade e a regra "é-um". Um carrinho de compras *tem uma* lista de itens, ele *não é* uma lista. Se estendesse `ArrayList`, métodos como `clear()` ou `sort()` ficariam expostos publicamente, permitindo a manipulação indevida do carrinho sem passar por regras de negócio.
+* **Alternativa Adotada:** Aplicação de **Composição**, mantendo uma `List<ItemPedido>` interna com encapsulamento e métodos próprios de manipulação.

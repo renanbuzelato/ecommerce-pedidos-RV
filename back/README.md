@@ -1,16 +1,14 @@
 # Sistema de Gestão de Pedidos — E-commerce
 
-> Projeto integrador da Unidade Curricular **Desenvolvimento Back-end**
+> Projeto integrador das Unidades Curriculares **Desenvolvimento Back-end** e **Framework Desenvolvimento Front-End**
 > Curso Superior de Tecnologia em Análise e Desenvolvimento de Sistemas — Turma CSTADS601
 
 ## Equipe / Squad
 
-| Nome | Papel na Aula 01 |
+| Nome | Papel no projeto |
 |---|---|
-| _(nome do integrante 1)_ | Responsável do dia |
-| _(nome do integrante 2)_ | |
-| _(nome do integrante 3)_ | |
-| _(nome do integrante 4)_ | |
+| Renan Buzelato | Back-end: domínio, persistência e API REST |
+| Vitor de Souza Dias | Front-end React, domínio Cliente e documentação |
 
 ## Descrição do desafio
 
@@ -118,13 +116,13 @@ Registro da migração para Spring Boot (Aula 14): [`docs/REGISTRO_MIGRACAO.md`]
 | 13 | Persistência: Update, Delete e padrão DAO/Repository |
 | 14 | Migração para Spring Boot ✅ |
 | 15 | API REST + pipeline CI/CD ✅ |
-| 16 | Entrega final, documentação e apresentação |
+| 16 | Entrega final, documentação e apresentação ✅ |
 
 ## Combinado da equipe (ética e convivência)
 
-1. _(regra 1 definida pela equipe)_
-2. _(regra 2 definida pela equipe)_
-3. _(regra 3 definida pela equipe)_
+1. Ninguém envia commit direto para a `main`: toda mudança entra por Pull Request revisado por outro integrante.
+2. Commits pequenos e descritivos no padrão `feat:`, `fix:`, `test:`, `docs:`, uma branch por funcionalidade.
+3. O código só é integrado com os testes passando no pipeline, e dúvidas ou atrasos são avisados no grupo.
 
 ## Licença
 
