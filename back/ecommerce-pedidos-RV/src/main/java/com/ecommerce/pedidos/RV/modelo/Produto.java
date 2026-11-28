@@ -91,6 +91,16 @@ public class Produto {
         this.categoria = categoria.trim();
     }
 
+    /**
+     * Alteração completa pela API (PUT). Um método da própria entidade, e não setters soltos:
+     * é o encapsulamento da Aula 05, e as validações da Aula 09 continuam valendo na alteração.
+     */
+    public void alterarDados(String nome, BigDecimal preco, int quantidade) {
+        setNome(nome);
+        alterarPreco(preco);
+        definirEstoque(quantidade);
+    }
+
     /** Ajuste de inventário feito pela área administrativa (edição do produto). */
     public void definirEstoque(int quantidade) {
         if (quantidade < 0) {

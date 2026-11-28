@@ -4,14 +4,15 @@ import { calcularFrete, TRANSICOES } from '../../utils/constants';
 
 /**
  * API SIMULADA — responde às mesmas rotas do contrato REST (/produtos, /clientes,
- * /pedidos, /pagamentos) e aplica as MESMAS regras de negócio do back-end Java:
+ * /pedidos e o sub-recurso /pedidos/{id}/pagamento) e aplica as MESMAS regras de negócio do back-end Java:
  *  - nome de produto único (ProdutoDuplicadoException -> 409)
  *  - CPF e e-mail de cliente únicos (ClienteDuplicadoException -> 409)
- *  - baixa de estoque ao criar pedido (EstoqueInsuficienteException -> 422)
+ *  - baixa de estoque ao criar pedido (EstoqueInsuficienteException -> 409)
  *  - produto inativo não entra em pedido; cancelar devolve o estoque
  *  - pedido pago não pode ser cancelado; não se paga pedido pago/cancelado
  *  - frete grátis a partir de R$ 200 (CalculadoraFrete)
  *  - Pix aprova, Boleto fica pendente, Cartão aprova (máx. 12 parcelas)
+ * Códigos iguais ao TratadorDeErros: 400 dados inválidos, 404 não encontrado, 409 conflito.
  * Os dados ficam no localStorage, então sobrevivem ao F5.
  */
 const CHAVE = 'rv-mock-db';
@@ -179,17 +180,17 @@ const pedidos = {
   buscar: (id) => comTotais(encontrar('pedidos', id, 'Pedido')),
   criar(body) {
     const cliente = encontrar('clientes', body?.clienteId, 'Cliente');
-    if (!body.itens?.length) throw new ApiError(422, 'Não é possível criar um pedido sem itens.');
-    if (!body.enderecoEntrega) throw new ApiError(422, 'Informe o endereço de entrega.');
+    if (!body.itens?.length) throw new ApiError(409, 'Não é possível criar um pedido sem itens.');
+    if (!body.enderecoEntrega) throw new ApiError(409, 'Informe o endereço de entrega.');
 
     // 1ª passada: valida tudo antes de alterar qualquer estoque (equivale ao rollback)
     const linhas = body.itens.map(({ produtoId, quantidade }) => {
       const produto = encontrar('produtos', produtoId, 'Produto');
-      if (!produto.ativo) throw new ApiError(422, `Produto ${produto.nome} está inativo.`);
+      if (!produto.ativo) throw new ApiError(409, `Produto ${produto.nome} está inativo.`);
       if (!(quantidade > 0)) throw new ApiError(400, 'Quantidade deve ser positiva.');
       if (quantidade > produto.quantidadeEmEstoque) {
         throw new ApiError(
-          422,
+          409,
           `Estoque insuficiente para "${produto.nome}": solicitado ${quantidade}, disponível ${produto.quantidadeEmEstoque}.`,
         );
       }
@@ -229,15 +230,15 @@ const pedidos = {
       pedido.pagamento?.forma === 'BOLETO' && pedido.pagamento?.resultado === 'PENDENTE';
     if (pedido.situacao === 'ABERTO' && nova === 'PAGO') {
       if (!boletoPendente)
-        throw new ApiError(422, 'Pedido só fica pago após um pagamento aprovado.');
+        throw new ApiError(409, 'Pedido só fica pago após um pagamento aprovado.');
       pedido.pagamento.resultado = 'APROVADO';
       registrarSituacao(pedido, 'PAGO');
       return comTotais(pedido);
     }
     if (!(TRANSICOES[pedido.situacao] || []).includes(nova)) {
       if (pedido.situacao === 'PAGO' && nova === 'CANCELADO')
-        throw new ApiError(422, 'Pedido pago não pode ser cancelado.');
-      throw new ApiError(422, `Não é possível mudar o pedido de ${pedido.situacao} para ${nova}.`);
+        throw new ApiError(409, 'Pedido pago não pode ser cancelado.');
+      throw new ApiError(409, `Não é possível mudar o pedido de ${pedido.situacao} para ${nova}.`);
     }
     if (nova === 'CANCELADO') {
       // Pedido.cancelar(): devolve os itens ao estoque
@@ -254,12 +255,12 @@ const pedidos = {
 /* ------------------------------ PAGAMENTOS ------------------------------ */
 
 const pagamentos = {
-  processar(body) {
-    const pedido = encontrar('pedidos', body?.pedidoId, 'Pedido');
+  processar(pedidoId, body) {
+    const pedido = encontrar('pedidos', pedidoId, 'Pedido');
     if (pedido.situacao === 'PAGO' || pedido.pagamento?.resultado === 'APROVADO')
-      throw new ApiError(422, 'Este pedido já foi pago anteriormente.');
+      throw new ApiError(409, 'Este pedido já foi pago anteriormente.');
     if (pedido.situacao === 'CANCELADO')
-      throw new ApiError(422, 'Não é possível pagar um pedido cancelado.');
+      throw new ApiError(409, 'Não é possível pagar um pedido cancelado.');
 
     const { forma, dados = {} } = body;
     let resultado;
@@ -296,6 +297,12 @@ const pagamentos = {
 
     return { pedidoId: pedido.id, forma, resultado, comprovante, descricao, mensagem };
   },
+  buscar(pedidoId) {
+    const pedido = encontrar('pedidos', pedidoId, 'Pedido');
+    if (!pedido.pagamento)
+      throw new ApiError(404, `O pedido ${pedido.id} ainda não tem pagamento registrado.`);
+    return { pedidoId: pedido.id, ...pedido.pagamento };
+  },
 };
 
 /* -------------------------------- ROTEADOR ------------------------------- */
@@ -314,7 +321,8 @@ const rotas = [
   ['POST', /^\/pedidos$/, (_, b) => pedidos.criar(b)],
   ['GET', /^\/pedidos\/(\d+)$/, ([id]) => pedidos.buscar(id)],
   ['PATCH', /^\/pedidos\/(\d+)$/, ([id], b) => pedidos.alterarSituacao(id, b)],
-  ['POST', /^\/pagamentos$/, (_, b) => pagamentos.processar(b)],
+  ['POST', /^\/pedidos\/(\d+)\/pagamento$/, ([id], b) => pagamentos.processar(id, b)],
+  ['GET', /^\/pedidos\/(\d+)\/pagamento$/, ([id]) => pagamentos.buscar(id)],
 ];
 
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));

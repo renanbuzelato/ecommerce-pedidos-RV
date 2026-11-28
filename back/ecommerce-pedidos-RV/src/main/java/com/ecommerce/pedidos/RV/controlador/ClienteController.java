@@ -13,14 +13,14 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.URI;
 import java.util.List;
 
 /**
  *   GET  /api/clientes        200 lista
  *   GET  /api/clientes/{id}   200 | 404
- *   POST /api/clientes        201 | 400 | 409 (e-mail/CPF repetido)
+ *   POST /api/clientes        201 + Location | 400 | 409 (e-mail/CPF repetido)
  *   PUT  /api/clientes/{id}   200 | 400 | 404 | 409
  */
 @RestController
@@ -44,13 +44,14 @@ public class ClienteController {
     }
 
     @PostMapping
-    public ResponseEntity<ClienteResposta> cadastrar(@Valid @RequestBody ClienteEntrada entrada) {
+    public ResponseEntity<ClienteResposta> cadastrar(@Valid @RequestBody ClienteEntrada entrada,
+                                                     UriComponentsBuilder uriBuilder) {
         Cliente cliente = new Cliente(entrada.nome(), entrada.documento(), entrada.email());
         cliente.setTelefone(entrada.telefone());
         entrada.enderecosComoEntidades().forEach(cliente::adicionarEndereco);
 
         Cliente salvo = servico.cadastrar(cliente);
-        return ResponseEntity.created(URI.create("/api/clientes/" + salvo.getId()))
+        return ResponseEntity.created(uriBuilder.path("/api/clientes/{id}").buildAndExpand(salvo.getId()).toUri())
                 .body(ClienteResposta.de(salvo));
     }
 

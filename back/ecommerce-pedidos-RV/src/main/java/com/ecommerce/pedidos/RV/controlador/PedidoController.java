@@ -17,15 +17,15 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.URI;
 import java.util.List;
 
 /**
  *   GET   /api/pedidos        200 lista (mais novos primeiro)
  *   GET   /api/pedidos/{id}   200 | 404
- *   POST  /api/pedidos        201 | 400 | 404 | 422 (estoque insuficiente, produto inativo)
- *   PATCH /api/pedidos/{id}   200 | 404 | 422 (transição inválida)
+ *   POST  /api/pedidos        201 + Location | 400 | 404 | 409 (estoque insuficiente, produto inativo)
+ *   PATCH /api/pedidos/{id}   200 | 404 | 409 (transição inválida)
  */
 @RestController
 @RequestMapping("/api/pedidos")
@@ -50,13 +50,14 @@ public class PedidoController {
     }
 
     @PostMapping
-    public ResponseEntity<PedidoResposta> criar(@Valid @RequestBody PedidoEntrada entrada)
+    public ResponseEntity<PedidoResposta> criar(@Valid @RequestBody PedidoEntrada entrada,
+                                                UriComponentsBuilder uriBuilder)
             throws EstoqueInsuficienteException, PedidoInvalidoException {
         List<ItemSolicitado> itens = entrada.itens().stream()
                 .map(i -> new ItemSolicitado(i.produtoId(), i.quantidade()))
                 .toList();
         Pedido pedido = servico.criar(entrada.clienteId(), entrada.enderecoEntrega().paraEntrega(), itens);
-        return ResponseEntity.created(URI.create("/api/pedidos/" + pedido.getId()))
+        return ResponseEntity.created(uriBuilder.path("/api/pedidos/{id}").buildAndExpand(pedido.getId()).toUri())
                 .body(mapper.paraResposta(pedido));
     }
 
