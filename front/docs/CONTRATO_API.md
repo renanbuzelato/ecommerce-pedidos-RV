@@ -8,18 +8,26 @@ Base: `/api` · JSON · valores monetários como texto ou número (`"349.90"` ou
 
 ## Formato de erro
 
-Qualquer resposta 4xx/5xx com corpo JSON. O front lê, nesta ordem, `mensagem`, `message` ou `error`:
+Corpo único para a API inteira (Aula 15). O front lê `mensagem` (ou, por compatibilidade, `message`/`error`):
 
 ```json
-{ "status": 409, "mensagem": "Já existe um produto chamado \"Mouse Sem Fio Ergo\"." }
+{
+  "status": 409,
+  "erro": "Conflito",
+  "mensagem": "Já existe um produto chamado \"Mouse Sem Fio Ergo\".",
+  "caminho": "/api/produtos",
+  "instante": "2026-11-27T22:10:07"
+}
 ```
+
+No 400 de validação vem também `"campos": [ { "campo": "preco", "mensagem": "..." } ]`.
 
 | Exceção do domínio (Java)                                                                        | HTTP esperado |
 | ------------------------------------------------------------------------------------------------ | ------------- |
 | `ProdutoNaoEncontradoException`, `ClienteNaoEncontradoException`, `PedidoNaoEncontradoException` | 404           |
 | `ProdutoDuplicadoException`, `ClienteDuplicadoException`, exclusão bloqueada por RESTRICT        | 409           |
-| `EstoqueInsuficienteException`, `PedidoInvalidoException`, transição de situação inválida        | 422           |
-| `IllegalArgumentException` (validação nos construtores)                                          | 400           |
+| `EstoqueInsuficienteException`, `PedidoInvalidoException`, transição de situação inválida        | 409           |
+| Bean Validation (`@Valid`), `IllegalArgumentException` (validação nos construtores)              | 400           |
 
 O front usa o **404** para mostrar a página "não encontrado" nas rotas dinâmicas.
 
@@ -114,13 +122,17 @@ Se o back não mandar `frete`/`totalComFrete`/`historico`, o front calcula/monta
 
 **Transições aceitas no PATCH:** `ABERTO → CANCELADO` (devolve estoque), `PAGO → ENVIADO`,
 `ENVIADO → ENTREGUE`, e `ABERTO → PAGO` **somente** para boleto pendente (compensação).
-`PAGO → CANCELADO` deve dar 422 ("Pedido pago não pode ser cancelado.").
+`PAGO → CANCELADO` dá 409 ("Pedido pago não pode ser cancelado.").
 
-## Pagamentos
+## Pagamento (sub-recurso do pedido)
 
-| Método | Rota          | Corpo enviado                | Resposta             |
-| ------ | ------------- | ---------------------------- | -------------------- |
-| POST   | `/pagamentos` | `{ pedidoId, forma, dados }` | `ResultadoPagamento` |
+Pagar não é criar nem atualizar um pedido, é uma ação sobre ele: em REST vira
+"criar um pagamento do pedido".
+
+| Método | Rota                      | Corpo enviado       | Resposta                                      |
+| ------ | ------------------------- | ------------------- | --------------------------------------------- |
+| POST   | `/pedidos/{id}/pagamento` | `{ forma, dados }`  | 201 + `Location` + `ResultadoPagamento`       |
+| GET    | `/pedidos/{id}/pagamento` | —                   | 200 (última tentativa) ou 404 se não houver   |
 
 ```json
 // forma = "CARTAO" -> dados: { "numero": "4111111111111111", "titular": "ANA", "validade": "12/30", "parcelas": 3 }
@@ -139,7 +151,8 @@ Se o back não mandar `frete`/`totalComFrete`/`historico`, o front calcula/monta
 ```
 
 `resultado`: `APROVADO` (pedido vira `PAGO`), `RECUSADO` (pedido continua `ABERTO`, o usuário
-pode tentar de novo) ou `PENDENTE` (boleto). No back isso é o `ProcessadorPagamento`
+pode tentar de novo) ou `PENDENTE` (boleto). Recusado também é 201: a tentativa foi registrada.
+Pagar pedido já pago ou cancelado dá 409. No back isso é o `ProcessadorPagamento`
 escolhido pela `forma` — `getComprovante()` e `getDescricao()` já existem nas classes.
 
 ## Implementação no back-end (Aula 15)
@@ -152,8 +165,8 @@ O contrato acima está implementado em `back/ecommerce-pedidos-RV` e coberto pel
 | `/api/produtos` | `ProdutoController` | `ServicoProduto` (nome único, exclusão bloqueada se vendido) |
 | `/api/clientes` | `ClienteController` | `ServicoCliente` (e-mail/CPF únicos, endereços em composição) |
 | `/api/pedidos` | `PedidoController` + `PedidoMapper` | `ServicoPedido.criar / alterarSituacao`, `CalculadoraFrete` |
-| `/api/pagamentos` | `PagamentoController` | `ServicoPagamento` escolhe `Pix`, `CartaoCredito` ou `Boleto` (`ProcessadorPagamento`) |
-| erros | `TratadorDeErros` (`@RestControllerAdvice`) | exceções da Aula 09/14 → 400/404/409/422 |
+| `/api/pedidos/{id}/pagamento` | `PagamentoController` | `ServicoPagamento` escolhe `Pix`, `CartaoCredito` ou `Boleto` (`ProcessadorPagamento`) |
+| erros | `TratadorDeErros` (`@RestControllerAdvice`) | exceções da Aula 09/14 → 400/404/409, corpo único |
 
 Mudanças no domínio feitas para casar com a interface: `Produto.descricao/categoria`,
 `Cliente.telefone` + entidade `Endereco`, `SituacaoPedido` com `ENVIADO`/`ENTREGUE`,
@@ -162,5 +175,8 @@ e `CartaoCredito` recusando cartões terminados em `0000`. As entidades nunca sa
 os controladores devolvem records (DTOs), evitando `LazyInitializationException` com
 `open-in-view=false`.
 
-Exclusão de produto já vendido devolve **422** (regra de negócio), com a mensagem explicando
-que ele deve ser desativado.
+Exclusão de produto já vendido devolve **409** (conflito com o estado atual), com a mensagem
+explicando que ele deve ser desativado.
+
+Documentação no formato do template da aula e coleção do Postman:
+`back/ecommerce-pedidos-RV/docs/API.md` e `back/ecommerce-pedidos-RV/docs/ecommerce-pedidos-RV.postman_collection.json`.

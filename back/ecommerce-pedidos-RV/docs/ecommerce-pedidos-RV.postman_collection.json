@@ -1,0 +1,943 @@
+{
+  "info": {
+    "_postman_id": "c572d70f-95a4-520e-9f6f-5954e66ea0be",
+    "name": "E-commerce Pedidos RV — API REST",
+    "description": "API do Sistema de Gestão de Pedidos (squad RV). Antes de usar: suba o back-end (mvn spring-boot:run) com schema.sql + dados-exemplo.sql carregados. Rode as pastas na ordem (Produtos → Clientes → Pedidos): os POSTs guardam os ids nas variáveis da coleção. Erros sempre em { status, erro, mensagem, caminho, instante, campos? }. Documentação: back/ecommerce-pedidos-RV/docs/API.md",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Produtos",
+      "item": [
+        {
+          "name": "Listar produtos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/produtos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "produtos"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Cadastrar produto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Tem Location', () => pm.response.to.have.header('Location'));",
+                  "if (pm.response.code < 300) pm.collectionVariables.set('produtoId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/produtos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "produtos"
+              ]
+            },
+            "description": "201 + Location. Salva o id em {{produtoId}}. Rode só uma vez: o nome é único (a 2ª vez dá 409).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Caneca Térmica Postman\",\n  \"descricao\": \"Mantém a bebida quente por 6 h.\",\n  \"categoria\": \"Casa\",\n  \"preco\": \"59.90\",\n  \"quantidadeEmEstoque\": 10,\n  \"ativo\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Buscar produto por id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/produtos/{{produtoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "produtos",
+                "{{produtoId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Atualizar produto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/produtos/{{produtoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "produtos",
+                "{{produtoId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Caneca Térmica Postman\",\n  \"descricao\": \"Agora com tampa.\",\n  \"categoria\": \"Casa\",\n  \"preco\": \"64.90\",\n  \"quantidadeEmEstoque\": 8,\n  \"ativo\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "ERRO 400 - preço negativo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Corpo de erro padrão', () => { const j = pm.response.json(); pm.expect(j.status).to.eql(400); pm.expect(j).to.have.property('mensagem'); pm.expect(j).to.have.property('caminho'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/produtos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "produtos"
+              ]
+            },
+            "description": "Bean Validation: o corpo traz a lista 'campos'.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Produto inválido\",\n  \"categoria\": \"Casa\",\n  \"preco\": \"-1\",\n  \"quantidadeEmEstoque\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "ERRO 404 - produto inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Corpo de erro padrão', () => { const j = pm.response.json(); pm.expect(j.status).to.eql(404); pm.expect(j).to.have.property('mensagem'); pm.expect(j).to.have.property('caminho'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/produtos/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "produtos",
+                "999999"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "ERRO 409 - nome repetido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 409', () => pm.response.to.have.status(409));",
+                  "pm.test('Corpo de erro padrão', () => { const j = pm.response.json(); pm.expect(j.status).to.eql(409); pm.expect(j).to.have.property('mensagem'); pm.expect(j).to.have.property('caminho'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/produtos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "produtos"
+              ]
+            },
+            "description": "Precisa dos dados-exemplo.sql carregados.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Mouse Sem Fio Ergo\",\n  \"categoria\": \"Informática\",\n  \"preco\": \"10\",\n  \"quantidadeEmEstoque\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Excluir produto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/produtos/{{produtoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "produtos",
+                "{{produtoId}}"
+              ]
+            },
+            "description": "204 sem corpo. Rodando de novo dá 404 (DELETE idempotente). Produto já vendido dá 409."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clientes",
+      "item": [
+        {
+          "name": "Listar clientes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/clientes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Cadastrar cliente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Tem Location', () => pm.response.to.have.header('Location'));",
+                  "if (pm.response.code < 300) pm.collectionVariables.set('clienteId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/clientes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes"
+              ]
+            },
+            "description": "201 + Location. Salva o id em {{clienteId}}. E-mail e CPF são únicos (a 2ª vez dá 409).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Cliente Postman\",\n  \"documento\": \"390.533.447-05\",\n  \"email\": \"cliente.postman@email.com\",\n  \"telefone\": \"(16) 99999-0000\",\n  \"enderecos\": [\n    {\n      \"apelido\": \"Casa\",\n      \"cep\": \"13560-000\",\n      \"logradouro\": \"Rua Episcopal\",\n      \"numero\": \"1200\",\n      \"complemento\": \"Apto 12\",\n      \"bairro\": \"Centro\",\n      \"cidade\": \"São Carlos\",\n      \"uf\": \"SP\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Buscar cliente por id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/clientes/{{clienteId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes",
+                "{{clienteId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Atualizar cliente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/clientes/{{clienteId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes",
+                "{{clienteId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Cliente Postman Editado\",\n  \"documento\": \"390.533.447-05\",\n  \"email\": \"cliente.postman@email.com\",\n  \"telefone\": \"(16) 3333-4444\",\n  \"enderecos\": [\n    {\n      \"apelido\": \"Casa\",\n      \"cep\": \"13560-000\",\n      \"logradouro\": \"Rua Episcopal\",\n      \"numero\": \"1200\",\n      \"complemento\": \"Apto 12\",\n      \"bairro\": \"Centro\",\n      \"cidade\": \"São Carlos\",\n      \"uf\": \"SP\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "ERRO 400 - e-mail inválido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Corpo de erro padrão', () => { const j = pm.response.json(); pm.expect(j.status).to.eql(400); pm.expect(j).to.have.property('mensagem'); pm.expect(j).to.have.property('caminho'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/clientes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Sem e-mail\",\n  \"documento\": \"111.222.333-96\",\n  \"email\": \"invalido\",\n  \"enderecos\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pedidos e pagamento",
+      "item": [
+        {
+          "name": "Listar pedidos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pedidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pedidos"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Criar pedido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Tem Location', () => pm.response.to.have.header('Location'));",
+                  "if (pm.response.code < 300) pm.collectionVariables.set('pedidoId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pedidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pedidos"
+              ]
+            },
+            "description": "201 + Location. Baixa o estoque. Salva o id em {{pedidoId}}. Usa o produto 4 dos dados de exemplo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": {{clienteId}},\n  \"enderecoEntrega\": {\n    \"apelido\": \"Casa\",\n    \"cep\": \"13560-000\",\n    \"logradouro\": \"Rua Episcopal\",\n    \"numero\": \"1200\",\n    \"complemento\": \"Apto 12\",\n    \"bairro\": \"Centro\",\n    \"cidade\": \"São Carlos\",\n    \"uf\": \"SP\"\n  },\n  \"itens\": [\n    {\n      \"produtoId\": 4,\n      \"quantidade\": 2\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Buscar pedido por id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pedidos/{{pedidoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pedidos",
+                "{{pedidoId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "ERRO 404 - pagamento ainda não registrado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Corpo de erro padrão', () => { const j = pm.response.json(); pm.expect(j.status).to.eql(404); pm.expect(j).to.have.property('mensagem'); pm.expect(j).to.have.property('caminho'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pedidos/{{pedidoId}}/pagamento",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pedidos",
+                "{{pedidoId}}",
+                "pagamento"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Pagar pedido (Pix)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Tem Location', () => pm.response.to.have.header('Location'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pedidos/{{pedidoId}}/pagamento",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pedidos",
+                "{{pedidoId}}",
+                "pagamento"
+              ]
+            },
+            "description": "Pagamento é sub-recurso do pedido: 201 + Location. Outras formas: CARTAO {numero, titular, parcelas} — final 0000 é recusado — e BOLETO (fica PENDENTE).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"forma\": \"PIX\",\n  \"dados\": {\n    \"chave\": \"cliente.postman@email.com\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Consultar pagamento do pedido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pedidos/{{pedidoId}}/pagamento",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pedidos",
+                "{{pedidoId}}",
+                "pagamento"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "ERRO 409 - pagar pedido já pago",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 409', () => pm.response.to.have.status(409));",
+                  "pm.test('Corpo de erro padrão', () => { const j = pm.response.json(); pm.expect(j.status).to.eql(409); pm.expect(j).to.have.property('mensagem'); pm.expect(j).to.have.property('caminho'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pedidos/{{pedidoId}}/pagamento",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pedidos",
+                "{{pedidoId}}",
+                "pagamento"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"forma\": \"PIX\",\n  \"dados\": {\n    \"chave\": \"x\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Avançar situação (ENVIADO)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pedidos/{{pedidoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pedidos",
+                "{{pedidoId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"situacao\": \"ENVIADO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Avançar situação (ENTREGUE)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pedidos/{{pedidoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pedidos",
+                "{{pedidoId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"situacao\": \"ENTREGUE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "ERRO 409 - estoque insuficiente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 409', () => pm.response.to.have.status(409));",
+                  "pm.test('Corpo de erro padrão', () => { const j = pm.response.json(); pm.expect(j.status).to.eql(409); pm.expect(j).to.have.property('mensagem'); pm.expect(j).to.have.property('caminho'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pedidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pedidos"
+              ]
+            },
+            "description": "Nada é gravado: a transação faz rollback.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": {{clienteId}},\n  \"enderecoEntrega\": {\n    \"apelido\": \"Casa\",\n    \"cep\": \"13560-000\",\n    \"logradouro\": \"Rua Episcopal\",\n    \"numero\": \"1200\",\n    \"complemento\": \"Apto 12\",\n    \"bairro\": \"Centro\",\n    \"cidade\": \"São Carlos\",\n    \"uf\": \"SP\"\n  },\n  \"itens\": [\n    {\n      \"produtoId\": 2,\n      \"quantidade\": 999\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "ERRO 400 - pedido sem itens",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Corpo de erro padrão', () => { const j = pm.response.json(); pm.expect(j.status).to.eql(400); pm.expect(j).to.have.property('mensagem'); pm.expect(j).to.have.property('caminho'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pedidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pedidos"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": {{clienteId}},\n  \"enderecoEntrega\": {\n    \"apelido\": \"Casa\",\n    \"cep\": \"13560-000\",\n    \"logradouro\": \"Rua Episcopal\",\n    \"numero\": \"1200\",\n    \"complemento\": \"Apto 12\",\n    \"bairro\": \"Centro\",\n    \"cidade\": \"São Carlos\",\n    \"uf\": \"SP\"\n  },\n  \"itens\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api"
+    },
+    {
+      "key": "produtoId",
+      "value": "1"
+    },
+    {
+      "key": "clienteId",
+      "value": "1"
+    },
+    {
+      "key": "pedidoId",
+      "value": "1"
+    }
+  ]
+}

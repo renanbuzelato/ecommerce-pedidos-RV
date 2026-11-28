@@ -56,7 +56,7 @@ describe('API simulada (regras do back-end)', () => {
           { id: 2, quantidade: 99 },
         ],
       }),
-    ).rejects.toMatchObject({ status: 422 });
+    ).rejects.toMatchObject({ status: 409 });
     expect((await produtoService.buscar(1)).estoque).toBe(25);
   });
 
@@ -100,6 +100,20 @@ describe('API simulada (regras do back-end)', () => {
     const antes = (await produtoService.buscar(10)).estoque;
     await pedidoService.alterarSituacao(3, 'CANCELADO');
     expect((await produtoService.buscar(10)).estoque).toBe(antes + 1);
+  });
+
+  it('pagamento é sub-recurso do pedido: GET 404 antes, GET 200 depois', async () => {
+    const pedido = await pedidoService.criar({
+      clienteId: 2,
+      enderecoEntrega: endereco,
+      itens: [{ id: 4, quantidade: 1 }],
+    });
+    await expect(pagamentoService.buscar(pedido.id)).rejects.toMatchObject({ status: 404 });
+    await pagamentoService.processar({ pedidoId: pedido.id, forma: 'PIX', dados: { chave: 'x' } });
+    expect(await pagamentoService.buscar(pedido.id)).toMatchObject({
+      pedidoId: pedido.id,
+      resultado: 'APROVADO',
+    });
   });
 
   it('não exclui produto que já foi vendido (RESTRICT)', async () => {

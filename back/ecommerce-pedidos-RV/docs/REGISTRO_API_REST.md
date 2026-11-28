@@ -19,13 +19,14 @@ Branch: `feature/api-rest-front`
 | GET | `/api/produtos` · `/api/produtos/{id}` | 200 | 404 |
 | POST | `/api/produtos` | 201 + `Location` | 400, 409 |
 | PUT | `/api/produtos/{id}` | 200 | 400, 404, 409 |
-| DELETE | `/api/produtos/{id}` | 204 | 404, 422 (já vendido) |
+| DELETE | `/api/produtos/{id}` | 204 | 404, 409 (já vendido) |
 | GET | `/api/clientes` · `/api/clientes/{id}` | 200 | 404 |
 | POST / PUT | `/api/clientes` · `/api/clientes/{id}` | 201 / 200 | 400, 404, 409 |
 | GET | `/api/pedidos` · `/api/pedidos/{id}` | 200 | 404 |
-| POST | `/api/pedidos` | 201 + `Location` | 400, 404, 422 |
-| PATCH | `/api/pedidos/{id}` `{ "situacao": ... }` | 200 | 404, 422 |
-| POST | `/api/pagamentos` | 200 | 400, 404, 422 |
+| POST | `/api/pedidos` | 201 + `Location` | 400, 404, 409 |
+| PATCH | `/api/pedidos/{id}` `{ "situacao": ... }` | 200 | 404, 409 |
+| POST | `/api/pedidos/{id}/pagamento` | 201 + `Location` | 400, 404, 409 |
+| GET | `/api/pedidos/{id}/pagamento` | 200 | 404 |
 
 ## 3. Mapa exceção → HTTP
 
@@ -33,11 +34,11 @@ Branch: `feature/api-rest-front`
 |---|---|---|
 | `ProdutoNaoEncontrado`, `ClienteNaoEncontrado`, `PedidoNaoEncontrado` | 404 | Recurso não existe |
 | `ProdutoDuplicado`, `ClienteDuplicado`, `DataIntegrityViolationException` | 409 | Conflito com o estado atual |
-| `EstoqueInsuficiente`, `PedidoInvalido` (verificadas, Aula 09), `IllegalStateException` | 422 | Pedido bem formado, mas a regra de negócio não permite |
+| `EstoqueInsuficiente`, `PedidoInvalido` (verificadas, Aula 09), `IllegalStateException` | 409 | Pedido bem formado, mas conflita com o estado atual (roteiro da Aula 15) |
 | `IllegalArgumentException` (validação nos construtores), Bean Validation, JSON malformado | 400 | Dados inválidos |
 
-**Pagamento recusado não é erro HTTP:** a requisição deu certo e a resposta é
-`{ "resultado": "RECUSADO" }` (200). Quem recusou foi a operadora, e a interface precisa
+**Pagamento recusado não é erro HTTP:** a tentativa foi registrada e a resposta é
+`{ "resultado": "RECUSADO" }` (201, como todo POST que cria). Quem recusou foi a operadora, e a interface precisa
 mostrar isso e oferecer nova tentativa.
 
 ## 4. Mudanças no domínio (pedidas pela interface)
@@ -77,9 +78,22 @@ mostrar isso e oferecer nova tentativa.
 
 | Teste | Tipo | O que prova |
 |---|---|---|
-| `controlador/ApiRestIntegracaoTest` | `@SpringBootTest` + MockMvc + H2 | Todos os endpoints, códigos 201/204/400/404/409/422, rollback por falta de estoque, ciclo de vida do pedido, Pix aprovado, cartão recusado com nova tentativa, boleto pendente e compensação |
+| `controlador/ApiRestIntegracaoTest` | `@SpringBootTest` + MockMvc + H2 | Todos os endpoints, códigos 201/204/400/404/409, corpo de erro único com `campos`, Location do pagamento, DELETE idempotente, rollback por falta de estoque, ciclo de vida do pedido, Pix aprovado, cartão recusado com nova tentativa, boleto pendente e compensação |
 
 ## 7. CI
 
 `.github/workflows/back-ci.yml` roda `mvn -B verify` a cada push/PR que mexa em `back/`
 e publica o relatório do JaCoCo como artefato. Não precisa de MySQL (H2 em memória).
+
+## 8. Ajustes do roteiro prático da Aula 15
+
+| Item do roteiro | Como ficou |
+|---|---|
+| Corpo de erro único (Momento 3, Passo 4) | `ErroResponse { status, erro, mensagem, caminho, instante, campos? }` + `CampoInvalido`; substituiu o antigo `ErroResposta` |
+| Conflitos de negócio | 422 → **409** (estoque insuficiente, pedido pago, produto vendido) |
+| Pagamento como sub-recurso (Momento 3, Passo 2) | `POST /api/pedidos/{id}/pagamento` → 201 + Location; `GET` do mesmo endereço; substituiu `POST /api/pagamentos` |
+| `Location` (Momento 2, Passo 4) | Montado com `UriComponentsBuilder` em todos os POSTs |
+| `Produto.alterarDados` (Momento 2, Passo 5) | PUT altera pelo método da entidade, mantendo as validações da Aula 09 |
+| DELETE (Momento 2, Passo 5) | `@ResponseStatus(NO_CONTENT)`; repetir dá 404 (idempotente) |
+| Pipeline (Momento 3, Passo 5) | Steps nomeados + artefatos `cobertura-jacoco` e `ecommerce-jar` |
+| Documentação e coleção (Momento 3, Passo 6) | [`API.md`](API.md) + [`ecommerce-pedidos-RV.postman_collection.json`](ecommerce-pedidos-RV.postman_collection.json) |

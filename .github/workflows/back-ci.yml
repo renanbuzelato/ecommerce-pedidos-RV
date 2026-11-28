@@ -1,6 +1,8 @@
 # Pipeline de integração contínua do BACK-END (Aula 15).
-# Roda a suíte inteira (unitários, integração com H2 e testes da API REST com MockMvc)
-# a cada push/PR que mexa no back. Não precisa de MySQL: os testes usam H2 em memória.
+# A cada push na main e a cada Pull Request que mexa no back: compila, roda a suíte inteira
+# (unitários, integração com H2 e API REST com MockMvc) numa máquina limpa e publica
+# o relatório de cobertura (JaCoCo) e o .jar como artefatos.
+# Os testes NÃO precisam de MySQL: usam H2 em memória (decisão registrada em docs/API.md).
 name: Back-end CI
 
 on:
@@ -16,20 +18,34 @@ defaults:
     working-directory: back/ecommerce-pedidos-RV
 
 jobs:
-  testes:
+  build:
     name: mvn verify (JUnit + MockMvc + JaCoCo)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: '17'
           cache: maven
-      - run: mvn -B verify
-      - uses: actions/upload-artifact@v4
+
+      # verify passa pela fase package: o .jar já fica em target/ (sem -DskipTests!)
+      - name: Compilar e testar
+        run: mvn -B verify
+
+      - name: Publicar relatório de cobertura
+        uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
-          name: relatorio-cobertura-jacoco
-          path: back/ecommerce-pedidos-RV/target/site/jacoco
+          name: cobertura-jacoco
+          path: back/ecommerce-pedidos-RV/target/site/jacoco/
+          retention-days: 14
+
+      - name: Publicar o artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecommerce-jar
+          path: back/ecommerce-pedidos-RV/target/*.jar
           retention-days: 14

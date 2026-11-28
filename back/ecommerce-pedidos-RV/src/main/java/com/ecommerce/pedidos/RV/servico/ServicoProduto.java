@@ -75,11 +75,9 @@ public class ServicoProduto {
         if (repositorio.existsByNomeAndIdNot(nome.trim(), id)) {
             throw new ProdutoDuplicadoException(nome);
         }
-        produto.setNome(nome);
+        produto.alterarDados(nome, preco, estoque);
         produto.setDescricao(descricao);
         produto.setCategoria(categoria);
-        produto.alterarPreco(preco);
-        produto.definirEstoque(estoque);
         if (ativo) produto.ativar(); else produto.desativar();
         return produto;                       // dirty checking grava o UPDATE no commit
     }

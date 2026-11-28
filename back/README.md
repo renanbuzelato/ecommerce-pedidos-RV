@@ -83,15 +83,18 @@ A API sobe em `http://localhost:8080/api`. Teste rápido: `curl http://localhost
 
 | Método | Rota | Sucesso | Erros |
 |---|---|---|---|
-| GET / POST | `/api/produtos` | 200 / 201 | 400, 409 |
-| GET / PUT / DELETE | `/api/produtos/{id}` | 200 / 200 / 204 | 400, 404, 409, 422 |
-| GET / POST | `/api/clientes` | 200 / 201 | 400, 409 |
+| GET / POST | `/api/produtos` | 200 / 201 + Location | 400, 409 |
+| GET / PUT / DELETE | `/api/produtos/{id}` | 200 / 200 / 204 | 400, 404, 409 |
+| GET / POST | `/api/clientes` | 200 / 201 + Location | 400, 409 |
 | GET / PUT | `/api/clientes/{id}` | 200 | 400, 404, 409 |
-| GET / POST | `/api/pedidos` | 200 / 201 | 400, 404, 422 |
-| GET / PATCH | `/api/pedidos/{id}` | 200 | 404, 422 |
-| POST | `/api/pagamentos` | 200 (`APROVADO`, `RECUSADO` ou `PENDENTE`) | 400, 404, 422 |
+| GET / POST | `/api/pedidos` | 200 / 201 + Location | 400, 404, 409 |
+| GET / PATCH | `/api/pedidos/{id}` | 200 | 400, 404, 409 |
+| POST / GET | `/api/pedidos/{id}/pagamento` | 201 + Location (`APROVADO`, `RECUSADO` ou `PENDENTE`) / 200 | 400, 404, 409 |
 
-Erros sempre no formato `{ "status": 404, "mensagem": "...", "timestamp": "..." }`.
+Erros sempre no formato `{ "status", "erro", "mensagem", "caminho", "instante", "campos"? }` (`campos` só no 400 de validação).
+
+**Documentação completa da API:** [`docs/API.md`](ecommerce-pedidos-RV/docs/API.md) ·
+**Coleção do Postman/Insomnia:** [`docs/ecommerce-pedidos-RV.postman_collection.json`](ecommerce-pedidos-RV/docs/ecommerce-pedidos-RV.postman_collection.json)
 Exemplos de JSON: [`front/docs/CONTRATO_API.md`](../front/docs/CONTRATO_API.md).
 Registro das decisões da Aula 15: [`docs/REGISTRO_API_REST.md`](ecommerce-pedidos-RV/docs/REGISTRO_API_REST.md).
 

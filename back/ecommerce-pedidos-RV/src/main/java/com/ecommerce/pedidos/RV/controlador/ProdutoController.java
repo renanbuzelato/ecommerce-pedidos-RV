@@ -5,6 +5,7 @@ import com.ecommerce.pedidos.RV.controlador.dto.ProdutoResposta;
 import com.ecommerce.pedidos.RV.modelo.Produto;
 import com.ecommerce.pedidos.RV.servico.ServicoProduto;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,9 +14,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.URI;
 import java.util.List;
 
 /**
@@ -24,7 +26,7 @@ import java.util.List;
  *   GET    /api/produtos/{id}   200 | 404
  *   POST   /api/produtos        201 + Location | 400 | 409
  *   PUT    /api/produtos/{id}   200 | 400 | 404 | 409
- *   DELETE /api/produtos/{id}   204 | 404 | 422 (já vendido: RESTRICT)
+ *   DELETE /api/produtos/{id}   204 | 404 | 409 (já vendido: RESTRICT)
  */
 @RestController
 @RequestMapping("/api/produtos")
@@ -47,14 +49,15 @@ public class ProdutoController {
     }
 
     @PostMapping
-    public ResponseEntity<ProdutoResposta> cadastrar(@Valid @RequestBody ProdutoEntrada entrada) {
+    public ResponseEntity<ProdutoResposta> cadastrar(@Valid @RequestBody ProdutoEntrada entrada,
+                                                     UriComponentsBuilder uriBuilder) {
         Produto produto = new Produto(entrada.nome(), entrada.preco(), entrada.quantidadeEmEstoque());
         produto.setDescricao(entrada.descricao());
         produto.setCategoria(entrada.categoria());
         if (!entrada.ativoOuPadrao()) produto.desativar();
 
         Produto salvo = servico.cadastrar(produto);
-        return ResponseEntity.created(URI.create("/api/produtos/" + salvo.getId()))
+        return ResponseEntity.created(uriBuilder.path("/api/produtos/{id}").buildAndExpand(salvo.getId()).toUri())
                 .body(ProdutoResposta.de(salvo));
     }
 
@@ -65,8 +68,8 @@ public class ProdutoController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> excluir(@PathVariable Long id) {
+    @ResponseStatus(HttpStatus.NO_CONTENT)                    // 204, sem corpo
+    public void excluir(@PathVariable Long id) {
         servico.excluir(id);
-        return ResponseEntity.noContent().build();
     }
 }

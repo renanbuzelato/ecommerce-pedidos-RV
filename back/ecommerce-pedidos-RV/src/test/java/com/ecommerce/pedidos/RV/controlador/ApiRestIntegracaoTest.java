@@ -76,8 +76,8 @@ class ApiRestIntegracaoTest {
     }
 
     private ResultActions pagar(long pedidoId, String forma, String dados) throws Exception {
-        return enviar(post("/api/pagamentos"),
-                "{ \"pedidoId\": %d, \"forma\": \"%s\", \"dados\": %s }".formatted(pedidoId, forma, dados));
+        return enviar(post("/api/pedidos/" + pedidoId + "/pagamento"),
+                "{ \"forma\": \"%s\", \"dados\": %s }".formatted(forma, dados));
     }
 
     private String nome(String base) {
@@ -102,12 +102,17 @@ class ApiRestIntegracaoTest {
     }
 
     @Test
-    @DisplayName("Produto inválido -> 400; nome repetido -> 409; id inexistente -> 404")
+    @DisplayName("Corpo de erro único: 400 com campos, 409 conflito, 404 não encontrado")
     void errosDeProduto() throws Exception {
         enviar(post("/api/produtos"), """
-                { "nome": "", "categoria": "Casa", "preco": "-1", "quantidadeEmEstoque": 1 }""")
+                { "nome": "Válido", "categoria": "Casa", "preco": "-1", "quantidadeEmEstoque": 1 }""")
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value(400));
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.erro").value("Dados inválidos"))
+                .andExpect(jsonPath("$.caminho").value("/api/produtos"))
+                .andExpect(jsonPath("$.instante").exists())
+                .andExpect(jsonPath("$.campos[0].campo").value("preco"))
+                .andExpect(jsonPath("$.campos[0].mensagem").value("O preço do produto deve ser positivo."));
 
         String nome = nome("Mouse Duplicado");
         criarProduto(nome, "50.00", 1);
@@ -116,7 +121,11 @@ class ApiRestIntegracaoTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.mensagem", containsString("Já existe")));
 
-        mvc.perform(get("/api/produtos/999999")).andExpect(status().isNotFound());
+        mvc.perform(get("/api/produtos/999999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.erro").value("Não encontrado"))
+                .andExpect(jsonPath("$.caminho").value("/api/produtos/999999"))
+                .andExpect(jsonPath("$.campos").doesNotExist());            // só aparece no 400
     }
 
     @Test
@@ -135,16 +144,18 @@ class ApiRestIntegracaoTest {
     }
 
     @Test
-    @DisplayName("DELETE: produto nunca vendido -> 204; produto já vendido -> 422 (RESTRICT)")
+    @DisplayName("DELETE: produto nunca vendido -> 204; produto já vendido -> 409 (RESTRICT)")
     void excluiProduto() throws Exception {
         long livre = criarProduto(nome("Produto Livre"), "10.00", 1);
         mvc.perform(delete("/api/produtos/" + livre)).andExpect(status().isNoContent());
+        // DELETE é idempotente: repetir não muda o estado final, só avisa que já não existe
+        mvc.perform(delete("/api/produtos/" + livre)).andExpect(status().isNotFound());
         mvc.perform(get("/api/produtos/" + livre)).andExpect(status().isNotFound());
 
         long vendido = criarProduto(nome("Produto Vendido"), "10.00", 5);
         criarPedido(criarCliente(), vendido, 1);
         mvc.perform(delete("/api/produtos/" + vendido))
-                .andExpect(status().isUnprocessableEntity())
+                .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.mensagem", containsString("já aparece em pedidos")));
     }
 
@@ -196,7 +207,7 @@ class ApiRestIntegracaoTest {
     }
 
     @Test
-    @DisplayName("Estoque insuficiente -> 422 e nada é gravado (rollback)")
+    @DisplayName("Estoque insuficiente -> 409 e nada é gravado (rollback)")
     void estoqueInsuficiente() throws Exception {
         long ok = criarProduto(nome("Com Estoque"), "10.00", 10);
         long pouco = criarProduto(nome("Sem Estoque"), "10.00", 1);
@@ -205,7 +216,7 @@ class ApiRestIntegracaoTest {
                   "itens": [ { "produtoId": %d, "quantidade": 3 }, { "produtoId": %d, "quantidade": 5 } ] }"""
                 .formatted(criarCliente(), ENDERECO, ok, pouco);
         enviar(post("/api/pedidos"), body)
-                .andExpect(status().isUnprocessableEntity())
+                .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.mensagem", containsString("Estoque insuficiente")));
         mvc.perform(get("/api/produtos/" + ok)).andExpect(jsonPath("$.quantidadeEmEstoque").value(10));
     }
@@ -215,14 +226,18 @@ class ApiRestIntegracaoTest {
     void cicloDeVidaComPix() throws Exception {
         long pedido = criarPedido(criarCliente(), criarProduto(nome("Fone"), "349.90", 5), 1);
 
+        mvc.perform(get("/api/pedidos/" + pedido + "/pagamento"))
+                .andExpect(status().isNotFound());                       // ainda sem pagamento
+
         pagar(pedido, "PIX", "{ \"chave\": \"ana@pix.com\" }")
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())                         // POST que cria -> 201
+                .andExpect(header().string("Location", containsString("/api/pedidos/" + pedido + "/pagamento")))
                 .andExpect(jsonPath("$.resultado").value("APROVADO"))
                 .andExpect(jsonPath("$.comprovante", containsString("PIX-")));
 
         enviar(patch("/api/pedidos/" + pedido), "{ \"situacao\": \"CANCELADO\" }")
-                .andExpect(status().isUnprocessableEntity());
-        pagar(pedido, "PIX", "{ \"chave\": \"x\" }").andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isConflict());
+        pagar(pedido, "PIX", "{ \"chave\": \"x\" }").andExpect(status().isConflict());
 
         enviar(patch("/api/pedidos/" + pedido), "{ \"situacao\": \"ENVIADO\" }").andExpect(status().isOk());
         enviar(patch("/api/pedidos/" + pedido), "{ \"situacao\": \"ENTREGUE\" }")
@@ -238,12 +253,16 @@ class ApiRestIntegracaoTest {
         long pedido = criarPedido(criarCliente(), criarProduto(nome("Mouse"), "129.90", 5), 1);
 
         pagar(pedido, "CARTAO", "{ \"numero\": \"4111111111110000\", \"titular\": \"ANA\", \"parcelas\": 3 }")
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.resultado").value("RECUSADO"))
                 .andExpect(jsonPath("$.descricao").value("Cartão final 0000 (3x)"));
         mvc.perform(get("/api/pedidos/" + pedido))
                 .andExpect(jsonPath("$.situacao").value("ABERTO"))
                 .andExpect(jsonPath("$.pagamento.resultado").value("RECUSADO"));
+        mvc.perform(get("/api/pedidos/" + pedido + "/pagamento"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultado").value("RECUSADO"))
+                .andExpect(jsonPath("$.mensagem").doesNotExist());
 
         pagar(pedido, "CARTAO", "{ \"numero\": \"4242 4242 4242 4242\", \"parcelas\": 1 }")
                 .andExpect(jsonPath("$.resultado").value("APROVADO"));

@@ -1,6 +1,8 @@
 package com.ecommerce.pedidos.RV.servico;
 
+import com.ecommerce.pedidos.RV.excecao.PagamentoNaoEncontradoException;
 import com.ecommerce.pedidos.RV.excecao.PedidoInvalidoException;
+import com.ecommerce.pedidos.RV.modelo.RegistroPagamento;
 import com.ecommerce.pedidos.RV.modelo.TipoPagamento;
 import com.ecommerce.pedidos.RV.modelo.pagamento.Boleto;
 import com.ecommerce.pedidos.RV.modelo.pagamento.CartaoCredito;
@@ -42,6 +44,15 @@ public class ServicoPagamento {
         }
         DadosPagamento d = dados == null ? new DadosPagamento(null, null, null, null) : dados;
         return servicoPedido.processarPagamento(pedidoId, forma, criarProcessador(forma, valor, d));
+    }
+
+    /** Última tentativa de pagamento do pedido (GET do sub-recurso). */
+    public RegistroPagamento buscarRegistro(Long pedidoId) {
+        RegistroPagamento registro = servicoPedido.buscarComItens(pedidoId).getPagamento();
+        if (registro == null || registro.getForma() == null) {
+            throw new PagamentoNaoEncontradoException(pedidoId);
+        }
+        return registro;
     }
 
     private ProcessadorPagamento criarProcessador(TipoPagamento forma, BigDecimal valor, DadosPagamento d) {
